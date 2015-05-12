@@ -23,8 +23,8 @@ CURRENCIES = (
 class Product(models.Model):
     uid = models.CharField(max_length=64, primary_key=True, help_text=_("Will be auto-generated"))
     name = models.CharField(max_length=128)
-    price_net = models.FloatField()
-    price_total = models.FloatField()
+    price_net = models.IntegerField()
+    price_total = models.IntegerField()
     vat_rate = models.FloatField(default=0.23)
     pkwiu_code = models.CharField(blank=True, null=True, max_length=16)
 

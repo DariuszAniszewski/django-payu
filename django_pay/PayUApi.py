@@ -35,7 +35,7 @@ class PayUApi():
             "merchantPosId": settings.DJANGO_PAY_PAYU_POS_ID,
             "description": "Your order description",
             "currencyCode": "PLN",
-            "totalAmount": str(int(100 * payu_payment.price_total)),
+            "totalAmount": payu_payment.price_total,
             "extOrderId": payu_payment.uid,
             "buyer": {
                 "email": payu_payment.user.email,
@@ -45,8 +45,8 @@ class PayUApi():
             "products": [
                 {
                     "name": payu_payment.product.name,
-                    "unitPrice": str(int(100 * payu_payment.product.price_total)),
-                    "quantity": str(payu_payment.quantity),
+                    "unitPrice": payu_payment.product.price_total,
+                    "quantity": payu_payment.quantity,
                 }
             ]
         }

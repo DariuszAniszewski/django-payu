@@ -46,8 +46,8 @@ class DjangoPayTestCase(TestCase):
     def create_product(self):
         self.product = Product.objects.create(
             name="Test Product",
-            price_net=100,
-            price_total=123,
+            price_net=1000,
+            price_total=1230,
             vat_rate=0.23,
         )
 
