@@ -3,8 +3,8 @@ import json
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from django_pay.helpers import ErrorMessages, PaymentStatus
-from django_pay.models import Product, PayuPayment
+from djangopay.helpers import ErrorMessages, PaymentStatus
+from djangopay.models import Product, PayuPayment
 
 
 class DjangoPayTestCase(TestCase):

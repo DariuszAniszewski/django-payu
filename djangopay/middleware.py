@@ -1,4 +1,4 @@
-from django_pay.helpers import DjangoPayException, BadRequestJsonResponse
+from djangopay.helpers import DjangoPayException, BadRequestJsonResponse
 
 
 class DjangoPayExceptionsMiddleware(object):

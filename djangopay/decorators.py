@@ -1,7 +1,7 @@
 import json
 
 from django.http.response import HttpResponseBadRequest
-from django_pay.helpers import BadRequestJsonResponse, ErrorMessages
+from djangopay.helpers import BadRequestJsonResponse, ErrorMessages
 
 
 def require_JSON(func):

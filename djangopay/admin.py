@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django_pay.models import Product, PayuPayment
+from djangopay.models import Product, PayuPayment
 
 
 class ProductAdmin(admin.ModelAdmin):

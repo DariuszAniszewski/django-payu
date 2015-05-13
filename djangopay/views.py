@@ -5,10 +5,10 @@ from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http.response import JsonResponse
-from django_pay.PayUApi import PayUApi
-from django_pay.models import Product, PayuPayment
-from django_pay.decorators import require_JSON, require_AJAX
-from django_pay.helpers import ErrorMessages, NoParamException, BadParamValueException, PaymentStatus
+from djangopay.PayUApi import PayUApi
+from djangopay.models import Product, PayuPayment
+from djangopay.decorators import require_JSON, require_AJAX
+from djangopay.helpers import ErrorMessages, NoParamException, BadParamValueException, PaymentStatus
 
 
 @csrf_exempt
