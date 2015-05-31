@@ -4,12 +4,99 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from django_payu.helpers import ErrorMessages, PaymentStatus
+from django_payu.core import Buyer, Product, DjangoPayU
+
+from django_payu.helpers import ErrorMessages, PaymentStatus, DjangoPayException
 from django_payu.models import PayuPayment
 
 
-class DjangoPayTestCase(TestCase):
+class TestBuyer(TestCase):
+    def test_create_buyer(self):
+        buyer = Buyer("first_name", "last_name", "email@server.com", "127.0.0.1")
+        self.assertEqual("first_name", buyer.first_name)
+        self.assertEqual("last_name", buyer.last_name)
+        self.assertEqual("email@server.com", buyer.email)
+        self.assertEqual("127.0.0.1", buyer.ip_address)
+
+    def test_create_buyer_with_wrong_email(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Buyer("first_name", "last_name", "email", "127.0.0.1")
+
+        self.assertEqual(ErrorMessages.NOT_VALID_EMAIL_ADDRESS, e.exception.message)
+
+    def test_create_buyer_with_wrong_ip_address(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Buyer("first_name", "last_name", "email@server.com", "not_email")
+
+        self.assertEqual(ErrorMessages.NOT_VALID_IP_ADDRESS, e.exception.message)
+
+
+class TestProduct(TestCase):
+    def test_create_product(self):
+        product = Product("Test product", 100, 2)
+        self.assertEqual("Test product", product.name)
+        self.assertEqual(2, product.quantity)
+        self.assertEqual(100, product.unit_price)
+
+    def test_create_product_with_wrong_quantity(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Product("Test product", 100, 3.4)
+
+        self.assertEqual(ErrorMessages.NOT_VALID_QUANTITY, e.exception.message)
+
+    def test_create_product_with_wrong_string_quantity(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Product("Test product", 100, "3.4")
+
+        self.assertEqual(ErrorMessages.NOT_VALID_QUANTITY, e.exception.message)
+
+    def test_create_product_with_wrong_unit_price(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Product("Test product", 10.4, 2)
+
+        self.assertEqual(ErrorMessages.NOT_VALID_UNIT_PRICE, e.exception.message)
+
+    def test_create_product_with_wrong_string_unit_price(self):
+        with self.assertRaises(DjangoPayException) as e:
+            Product("Test product", "10.4", 2)
+
+        self.assertEqual(ErrorMessages.NOT_VALID_UNIT_PRICE, e.exception.message)
+
+
+class TestNewPayment(TestCase):
+    def setUp(self):
+        self.product = Product("Test product", 100, 2)
+        self.buyer = Buyer("first_name", "last_name", "email@server.com", "127.0.0.1")
+
+    def test_payment_created(self):
+        payment_id, follow_url = DjangoPayU.create_payu_payment(self.buyer, self.product, "payment description")
+        self.assertIsNotNone(payment_id)
+        self.assertIsNotNone(follow_url)
+
+
+class TestGetPaymentStatus(TestCase):
+    def setUp(self):
+        self.product = Product("Test product", 100, 2)
+        self.buyer = Buyer("first_name", "last_name", "email@server.com", "127.0.0.1")
+        self.payment_id, self.follow_url = DjangoPayU.create_payu_payment(self.buyer, self.product, "test payment")
+
+    def test_get_payment_status_for_started_payment(self):
+        self.assertEqual(DjangoPayU.get_payment_status(self.payment_id), PaymentStatus.STATUS_STARTED)
+
+    def test_get_payment_status_for_failed_payment(self):
+        PayuPayment.objects.filter(pk=self.payment_id).update(payment_status=PaymentStatus.STATUS_FAILED)
+        self.assertEqual(DjangoPayU.get_payment_status(self.payment_id), PaymentStatus.STATUS_FAILED)
+
+    def test_get_payment_status_for_completed_payment(self):
+        PayuPayment.objects.filter(pk=self.payment_id).update(payment_status=PaymentStatus.STATUS_COMPLETED)
+        self.assertEqual(DjangoPayU.get_payment_status(self.payment_id), PaymentStatus.STATUS_COMPLETED)
+
+
+class TestPayuPaymentNotification(TestCase):
     url = None
+
+    def setUp(self):
+        self.url = reverse('django_pay_payu_notify')
 
     def perform_get_request(self):
         return self.client.get(self.url)
@@ -27,20 +114,6 @@ class DjangoPayTestCase(TestCase):
         self.assertIn("error", parsed_response)
         self.assertEqual(error, parsed_response["error"])
 
-    def execute_get_request_and_expect_error(self, error):
-        response = self.client.get(self.url)
-        self.assertEqual(400, response.status_code)
-        parsed_response = self.get_parsed_response(response)
-        self.assertIn("error", parsed_response)
-        self.assertEqual(error, parsed_response["error"])
-
-    def execute_get_ajax_request_and_expect_error(self, error):
-        response = self.client.get(self.url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(400, response.status_code)
-        parsed_response = self.get_parsed_response(response)
-        self.assertIn("error", parsed_response)
-        self.assertEqual(error, parsed_response["error"])
-
     def create_user(self):
         self.user = User.objects.create()
 
@@ -49,10 +122,10 @@ class DjangoPayTestCase(TestCase):
         self.payment = PayuPayment()
         self.payment.payu_id = "payu-id"
         self.payment.user = self.user
-        self.payment.name = "Test product"
-        self.payment.price = 1000
-        self.payment.quantity = 1
-        self.payment.ip_address = "127.0.0.1"
+        self.payment.product_name = "Test product"
+        self.payment.product_unit_price = 1000
+        self.payment.product_quantity = 1
+        self.payment.buyer_ip_address = "127.0.0.1"
         self.payment.save()
 
     def get_json_response_for_post_request(self, data):
@@ -61,14 +134,6 @@ class DjangoPayTestCase(TestCase):
         response_dict = json.loads(response.content.decode("utf-8"))
         return response_dict
 
-    def get_json_response_for_ajax_get_request(self):
-        response = self.client.get(self.url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(200, response.status_code)
-        response_dict = json.loads(response.content.decode("utf-8"))
-        return response_dict
-
-
-class CommonPostTests:
     def test_get_request(self):
         response = self.perform_get_request()
         self.assertEqual(405, response.status_code)
@@ -81,101 +146,6 @@ class CommonPostTests:
 
     def test_with_empty_json(self):
         self.execute_post_request_and_expect_error("{}", ErrorMessages.EMPTY_JSON_RESPONSE)
-
-
-class TestCreateNewPayuPayment(DjangoPayTestCase, CommonPostTests):
-    def setUp(self):
-        self.url = reverse('django_pay_payu_start')
-
-    def test_with_no_user_id(self):
-        self.execute_post_request_and_expect_error(
-            json.dumps({
-                "some": "field",
-            }),
-            ErrorMessages.USER_ID_NOT_FOUND
-        )
-
-    def test_with_no_quantity(self):
-        self.execute_post_request_and_expect_error(
-            json.dumps({
-                "user_id": 1,
-                "product_id": 1,
-            }),
-            ErrorMessages.QUANTITY_NOT_FOUND
-        )
-
-    def test_with_bad_user_id(self):
-        self.execute_post_request_and_expect_error(
-            json.dumps({
-                "user_id": -1,
-                "product_id": 1,
-                "quantity": 1,
-                "title": "Product name",
-                "price": 100,
-            }),
-            ErrorMessages.USER_NOT_FOUND
-        )
-
-    def test_with_no_price(self):
-        self.create_user()
-
-        self.execute_post_request_and_expect_error(json.dumps({
-            "user_id": self.user.pk,
-            "quantity": 1,
-            "title": "Product name",
-        }), ErrorMessages.PRICE_NOT_FOUND)
-
-    def test_with_no_title(self):
-        self.create_user()
-
-        self.execute_post_request_and_expect_error(json.dumps({
-            "user_id": self.user.pk,
-            "quantity": 1,
-            "price": 1,
-        }), ErrorMessages.TITLE_NOT_FOUND)
-
-    def test_with_wrong_price(self):
-        self.create_user()
-
-        self.execute_post_request_and_expect_error(json.dumps({
-            "user_id": self.user.pk,
-            "quantity": 1,
-            "price": "not_an_int",
-            "title": "Product name",
-        }), ErrorMessages.PRICE_MALFORMED)
-
-    def test_with_wrong_quantity(self):
-        self.create_user()
-
-        self.execute_post_request_and_expect_error(json.dumps({
-            "user_id": self.user.pk,
-            "quantity": "not_an_int",
-            "title": "Product name",
-            "price": 100,
-        }), ErrorMessages.QUANTITY_MALFORMED)
-
-    def test_payment_created(self):
-        self.create_user()
-
-        response_dict = self.get_json_response_for_post_request(json.dumps({
-            "user_id": self.user.pk,
-            "price": 100,
-            "title": "Product name",
-            "quantity": 1,
-        }))
-        self.assertIn("payu_id", response_dict)
-        self.assertIn("order_id", response_dict)
-        self.assertIn("follow", response_dict)
-        self.assertTrue(PayuPayment.objects.filter(
-            pk=response_dict["order_id"],
-            payu_id=response_dict["payu_id"]
-        ).exists())
-
-
-class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
-    def setUp(self):
-        self.url = reverse('django_pay_payu_notify')
-
 
     def test_order_key_not_found(self):
         data = {"bad": {}}
@@ -202,39 +172,39 @@ class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "PENDING"
             }
         }
         self.get_json_response_for_post_request(json.dumps(data))
         self.payment.refresh_from_db()
-        self.assertEqual(PaymentStatus.STATUS_STARTED, self.payment.status)
+        self.assertEqual(PaymentStatus.STATUS_STARTED, self.payment.payment_status)
 
     def test_payment_completed(self):
         self.create_payment()
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "COMPLETED"
             }
         }
         self.get_json_response_for_post_request(json.dumps(data))
         self.payment.refresh_from_db()
-        self.assertEqual(PaymentStatus.STATUS_COMPLETED, self.payment.status)
+        self.assertEqual(PaymentStatus.STATUS_COMPLETED, self.payment.payment_status)
 
     def test_payment_cancelled(self):
         self.create_payment()
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "CANCELED"
             }
         }
         self.get_json_response_for_post_request(json.dumps(data))
         self.payment.refresh_from_db()
-        self.assertEqual(PaymentStatus.STATUS_FAILED, self.payment.status)
+        self.assertEqual(PaymentStatus.STATUS_FAILED, self.payment.payment_status)
 
     def test_payment_completed_then_pending(self):
         self.create_payment()
@@ -243,7 +213,7 @@ class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "COMPLETED"
             }
         }
@@ -253,14 +223,14 @@ class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "PENDING"
             }
         }
         self.get_json_response_for_post_request(json.dumps(data))
 
         self.payment.refresh_from_db()
-        self.assertEqual(PaymentStatus.STATUS_COMPLETED, self.payment.status)
+        self.assertEqual(PaymentStatus.STATUS_COMPLETED, self.payment.payment_status)
 
     def test_payment_failed_then_pending(self):
         self.create_payment()
@@ -269,7 +239,7 @@ class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "CANCELED"
             }
         }
@@ -279,33 +249,11 @@ class TestPayuPaymentNotification(DjangoPayTestCase, CommonPostTests):
         data = {
             "order": {
                 "orderId": self.payment.payu_id,
-                "extOrderId": self.payment.uid,
+                "extOrderId": self.payment.payment_id,
                 "status": "PENDING"
             }
         }
         self.get_json_response_for_post_request(json.dumps(data))
 
         self.payment.refresh_from_db()
-        self.assertEqual(PaymentStatus.STATUS_FAILED, self.payment.status)
-
-
-class TestPayuPaymentStatus(DjangoPayTestCase):
-    def setUp(self):
-        self.create_payment()
-        self.url = reverse('django_pay_payu_status', args=[self.payment.pk])
-
-    def test_get_status_of_not_existing_payment(self):
-        self.url = reverse('django_pay_payu_status', args=["dummy_payment"])
-        self.execute_get_ajax_request_and_expect_error(ErrorMessages.PAYMENT_NOT_FOUND)
-
-    def test_get_status_not_as_ajax(self):
-        self.execute_get_request_and_expect_error(ErrorMessages.NOT_AJAX_REQUEST)
-
-    def test_get_status_of_existing_payment(self):
-        for status in PaymentStatus.all():
-            self.payment.status = status
-            self.payment.save()
-            json_response = self.get_json_response_for_ajax_get_request()
-            self.assertIn("status", json_response)
-            self.assertEqual(status, json_response["status"])
-
+        self.assertEqual(PaymentStatus.STATUS_FAILED, self.payment.payment_status)

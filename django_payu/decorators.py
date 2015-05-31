@@ -1,6 +1,5 @@
 import json
 
-from django.http.response import HttpResponseBadRequest
 from django_payu.helpers import BadRequestJsonResponse, ErrorMessages
 
 
@@ -16,15 +15,6 @@ def require_JSON(func):
 
         if not data:
             return BadRequestJsonResponse({"error": ErrorMessages.EMPTY_JSON_RESPONSE})
-        return func(request, *args, **kwargs)
-
-    return wrap
-
-
-def require_AJAX(func):
-    def wrap(request, *args, **kwargs):
-        if not request.is_ajax():
-            return BadRequestJsonResponse({"error": ErrorMessages.NOT_AJAX_REQUEST})
         return func(request, *args, **kwargs)
 
     return wrap

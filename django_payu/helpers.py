@@ -24,17 +24,13 @@ class PaymentStatus:
     STATUS_FAILED = "failed"
     STATUS_COMPLETED = "completed"
 
-    @staticmethod
-    def all():
-        return [
-            PaymentStatus.STATUS_NEW,
-            PaymentStatus.STATUS_STARTED,
-            PaymentStatus.STATUS_FAILED,
-            PaymentStatus.STATUS_COMPLETED,
-        ]
-
 
 class ErrorMessages():
+    NOT_VALID_IP_ADDRESS = "not valid IP address"
+    NOT_VALID_EMAIL_ADDRESS = "not valid email address"
+    NOT_VALID_QUANTITY = "not valid quantity"
+    NOT_VALID_UNIT_PRICE = "not valid unit price"
+
     PAYMENT_NOT_FOUND = "payment not found"
     ORDER_ID_NOT_FOUND = "orderId not found"
     STATUS_NOT_FOUND = "status not found"
