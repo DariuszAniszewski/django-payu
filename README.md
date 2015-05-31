@@ -29,7 +29,7 @@ and to middlewares at very bottom:
 ```
 MIDDLEWARE_CLASSES = (
     ...
-    'djangopay.middleware.DjangoPayExceptionsMiddleware'
+    'django_payu.middleware.DjangoPayExceptionsMiddleware'
     ...
 )
 ```
@@ -39,7 +39,7 @@ MIDDLEWARE_CLASSES = (
 ```
 urlpatterns = [
     ...
-    url(r'^djangopay/', include('djangopay.urls')),
+    url(r'^django_payu/', include('django_payu.urls')),
     ...
 ```
 
