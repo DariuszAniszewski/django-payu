@@ -14,6 +14,6 @@ setup(
     url='https://github.com/DariuszAniszewski/django-payu',
     license='TBD',
     description='Minimalistic PayU wrapper.',
-    install_requires=['pytz, requests'],
+    install_requires=['pytz==2013.7', 'requests'],
     zip_safe=False,
 )
