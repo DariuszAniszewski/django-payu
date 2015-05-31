@@ -1,22 +1,14 @@
-# Django Pay
+# Django PayU
 
-Simple Django module for easy integration of online payments in your application.
-
-### Supporting Providers
-
-- PayU
-
-
-### Planned
-
-- others ;)
-
+Simple Django module for painless integration of PayU online payments in your application.
 
 # Installation
 
+Instalation of `django-payu` is very easy - you just need to get it via pip and modify your settings and urls:
+
 ## 1. Install package
 ```
-pip install git+git://github.com/DariuszAniszewski/django-pay.git#egg=django-pay
+pip install git+git://github.com/DariuszAniszewski/django-payu.git#egg=django-payu
 ```
 
 ## 2. Edit your `settings.py` 
@@ -26,7 +18,7 @@ Add django-pay to `installed_apps`:
 ```
 INSTALLED_APPS = (
     ...
-    'djangopay',
+    'django_payu',
     ...
 )
 ```
@@ -38,7 +30,17 @@ and to middlewares at very bottom:
 MIDDLEWARE_CLASSES = (
     ...
     'djangopay.middleware.DjangoPayExceptionsMiddleware'
+    ...
 )
 ```
 
-...
+## 3. Add django-pay to your `urls.py`:
+
+```
+urlpatterns = [
+    ...
+    url(r'^djangopay/', include('djangopay.urls')),
+    ...
+```
+
+# API
