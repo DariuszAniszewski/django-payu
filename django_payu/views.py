@@ -52,6 +52,6 @@ def payu_notify(request):
 
 def payu_continue(request, payment_id):
     request.session["payment_id"] = payment_id
-    return redirect('django_pay_complete')
+    return redirect('django_pay_complete' + "?payment_id={}".format(payment_id))
 
 

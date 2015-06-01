@@ -30,11 +30,11 @@ class PayUApi:
     def make_order(self, payu_payment):
         data = {
             "notifyUrl": "{}{}".format(
-                settings.BASE_URL,
+                settings.DJANGO_PAYU_BASE_URL,
                 reverse('django_pay_payu_notify')
             ),
             "continueUrl": "{}{}".format(
-                settings.BASE_URL,
+                settings.DJANGO_PAYU_BASE_URL,
                 reverse('django_pay_payu_continue', args=[payu_payment.payment_id])
             ),
             "customerIp": payu_payment.buyer_ip_address,
