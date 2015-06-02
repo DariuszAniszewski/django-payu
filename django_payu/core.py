@@ -12,7 +12,7 @@ from django_payu.models import PayuPayment
 
 class DjangoPayU:
     @classmethod
-    def create_payu_payment(cls, buyer, product, description):
+    def create_payu_payment(cls, buyer, product, description, continue_url):
 
         payment = PayuPayment()
 
@@ -25,6 +25,8 @@ class DjangoPayU:
         payment.product_name = product.name
         payment.product_unit_price = product.unit_price
         payment.product_quantity = product.quantity
+
+        payment.continue_url = continue_url
 
         payment.save()
 

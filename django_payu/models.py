@@ -39,6 +39,8 @@ class PayuPayment(models.Model):
 
     payu_messages_log = models.TextField()
 
+    continue_url = models.URLField(blank=True, null=True)
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if not self.payment_id:
             self.payment_id = uuid4().hex

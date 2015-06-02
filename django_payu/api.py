@@ -33,10 +33,7 @@ class PayUApi:
                 settings.DJANGO_PAYU_BASE_URL,
                 reverse('django_pay_payu_notify')
             ),
-            "continueUrl": "{}{}".format(
-                settings.DJANGO_PAYU_BASE_URL,
-                reverse('django_pay_payu_continue', args=[payu_payment.payment_id])
-            ),
+            "continueUrl": payu_payment.continue_url,
             "customerIp": payu_payment.buyer_ip_address,
             "merchantPosId": self.POS_ID,
             "description": payu_payment.payment_description,

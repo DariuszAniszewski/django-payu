@@ -13,3 +13,5 @@ class PayuPaymentForm(forms.Form):
     product_quantity = forms.IntegerField(widget=NumberInput(attrs={"placeholder": ""}))
 
     purchase_description = forms.CharField(widget=Textarea(attrs={"rows": 3, "placeholder": "Describe your payment"}))
+
+    continue_url = forms.URLField()

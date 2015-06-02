@@ -7,7 +7,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-payu',
-    version='0.2.7',
+    version='0.3.0',
     author=u'Dariusz Aniszewski',
     author_email='dariusz@aniszewski.eu',
     packages=find_packages(),

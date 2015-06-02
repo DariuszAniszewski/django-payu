@@ -49,10 +49,3 @@ def payu_notify(request):
             payment.payment_status = PaymentStatus.STATUS_STARTED
     payment.save()
     return JsonResponse({})
-
-
-def payu_continue(request, payment_id):
-    request.session["payment_id"] = payment_id
-    return redirect(reverse('django_pay_complete') + "?payment_id={}".format(payment_id))
-
-
