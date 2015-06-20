@@ -1,4 +1,7 @@
+from django.conf import settings
 from django.http.response import JsonResponse
+from django.utils.datetime_safe import strftime
+from django.utils.timezone import now
 
 
 class BadRequestJsonResponse(JsonResponse):
@@ -47,3 +50,26 @@ class ErrorMessages():
     EMPTY_REQUEST_RESPONSE = "empty request"
     NOT_A_JSON_RESPONSE = "not a JSON"
     NOT_AJAX_REQUEST = "not ajax request"
+
+
+class Logger():
+    @staticmethod
+    def i(msg):
+        Logger.__log(msg, "INFO")
+
+    @staticmethod
+    def e(msg):
+        Logger.__log(msg, "ERROR")
+
+    @staticmethod
+    def __log(msg, tag):
+        if hasattr(settings, "DJANGO_PAYU_LOG_FILE") and settings.DJANGO_PAYU_LOG_FILE:
+            log_file = open(settings.DJANGO_PAYU_LOG_FILE, "a")
+            log_msg = "{}\t{}\t{}\n".format(
+                strftime(now(), "%Y-%m-%d %H:%M:%S"),
+                tag,
+                msg,
+
+            )
+            log_file.write(log_msg)
+            log_file.close()
